@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tictactoe-config
+  namespace: tictactoe
+data:
+  # Redis configuration
+  redis.host: "redis-service"
+  redis.port: "6379"
+  
+  # Kafka configuration
+  kafka.bootstrap.servers: "kafka-service:9092"
+  
+  # Database configuration
+  postgres.host: "postgres-service"
+  postgres.port: "5432"
+  postgres.database: "tictactoe"
+  
+  # Application configuration
+  app.environment: "kubernetes"
+  app.log.level: "INFO"
+  
+  # JWT configuration
+  jwt.expiration: "86400"
+  
+  # Game configuration
+  game.session.timeout: "300"
+  game.max.concurrent.games: "1000"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tictactoe-secrets
+  namespace: tictactoe
+type: Opaque
+stringData:
+  # Database credentials
+  postgres.username: "tictactoe"
+  postgres.password: "tictactoe123"
+  
+  # Redis password (if needed)
+  redis.password: ""
+  
+  # JWT secret
+  jwt.secret: "tictactoe-jwt-secret-key-change-in-production"
+  
+  # AWS credentials (if using AWS services)
+  aws.access.key.id: ""
+  aws.secret.access.key: ""
+  
+  # ClickHouse credentials
+  clickhouse.username: "analytics"
+  clickhouse.password: "analytics123"
