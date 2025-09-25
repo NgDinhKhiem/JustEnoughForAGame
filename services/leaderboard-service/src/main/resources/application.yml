@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: leaderboard-service
+  profiles:
+    include: common
+  
+  # Caching configuration for leaderboards
+  cache:
+    type: redis
+    redis:
+      time-to-live: 300s  # 5 minutes
+
+server:
+  port: 8085
+
+# Leaderboard service specific configuration
+leaderboard:
+  rankings:
+    global-size: ${GLOBAL_LEADERBOARD_SIZE:1000}
+    seasonal-size: ${SEASONAL_LEADERBOARD_SIZE:500}
+    update-interval: ${LEADERBOARD_UPDATE_INTERVAL:60s}
+  seasons:
+    duration: ${SEASON_DURATION:P90D}  # 90 days
+

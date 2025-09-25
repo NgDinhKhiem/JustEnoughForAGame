@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: auth-service
+  profiles:
+    include: common
+  
+  # Auth-specific Redis session configuration
+  session:
+    store-type: redis
+    redis:
+      namespace: "auth:session"
+    timeout: 1800s  # 30 minutes
+
+server:
+  port: 8071
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:your-secret-key-here-change-in-production}
+  expiration: ${JWT_EXPIRATION:86400}  # 24 hours in seconds
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}  # 7 days in seconds
+
+# OAuth2 Configuration (optional)
+oauth2:
+  google:
+    client-id: ${OAUTH2_GOOGLE_CLIENT_ID:}
+    client-secret: ${OAUTH2_GOOGLE_CLIENT_SECRET:}
+  github:
+    client-id: ${OAUTH2_GITHUB_CLIENT_ID:}
+    client-secret: ${OAUTH2_GITHUB_CLIENT_SECRET:}
+

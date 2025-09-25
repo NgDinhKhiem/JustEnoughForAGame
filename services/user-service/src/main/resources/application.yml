@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: user-service
+  profiles:
+    include: common
+  
+  # Caching configuration
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600s  # 10 minutes
+
+server:
+  port: 8072
+
+# User service specific configuration
+user:
+  profile:
+    max-avatar-size: ${MAX_AVATAR_SIZE:5242880}  # 5MB
+    allowed-avatar-types: ${ALLOWED_AVATAR_TYPES:image/jpeg,image/png,image/gif}
+

@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: lobby-service
+  profiles:
+    include: common
+  
+  # RabbitMQ configuration for real-time messaging
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:admin}
+    password: ${RABBITMQ_PASSWORD:admin}
+
+server:
+  port: 8083
+
+# Lobby service specific configuration
+lobby:
+  matchmaking:
+    max-skill-difference: ${MAX_SKILL_DIFFERENCE:100}
+    max-wait-time: ${MAX_WAIT_TIME:120s}
+    min-players: ${MIN_PLAYERS:2}
+    max-players: ${MAX_PLAYERS:4}
+  websocket:
+    allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000,https://yourdomain.com}
+

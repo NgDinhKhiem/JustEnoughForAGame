@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: game-service
+  profiles:
+    include: common
+
+server:
+  port: 8084
+
+# Game service specific configuration
+game:
+  session:
+    max-duration: ${MAX_GAME_DURATION:1800s}  # 30 minutes
+    idle-timeout: ${IDLE_TIMEOUT:300s}  # 5 minutes
+    max-concurrent-games: ${MAX_CONCURRENT_GAMES:1000}
+  websocket:
+    allowed-origins: ${WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000,https://yourdomain.com}
+  
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      gameLogic:
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        sliding-window-size: 10
+  retry:
+    instances:
+      gameLogic:
+        max-attempts: 3
+        wait-duration: 1s
+
