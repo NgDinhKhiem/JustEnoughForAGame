@@ -1,4 +1,4 @@
-package com.natsu.security;
+package com.natsu.jefag.security;
 
 import java.security.SecureRandom;
 

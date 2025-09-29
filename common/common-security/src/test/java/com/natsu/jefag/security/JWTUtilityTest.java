@@ -1,4 +1,4 @@
-package com.natsu.security;
+package com.natsu.jefag.security;
 
 import com.nimbusds.jwt.JWTClaimsSet;
 import org.junit.jupiter.api.BeforeAll;

@@ -1,4 +1,4 @@
-package com.natsu.security;
+package com.natsu.jefag.security;
 
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.RSASSASigner;
