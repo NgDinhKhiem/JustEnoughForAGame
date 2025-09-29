@@ -1,4 +1,4 @@
-package com.natsu.services.analytics;
+package com.natsu.jefag.services.analytics;
 
 import com.natsu.common.springboot.BaseSpringBootApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

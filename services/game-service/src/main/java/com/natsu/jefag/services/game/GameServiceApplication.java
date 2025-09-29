@@ -1,4 +1,4 @@
-package com.natsu.services.game;
+package com.natsu.jefag.services.game;
 
 import com.natsu.common.springboot.BaseSpringBootApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

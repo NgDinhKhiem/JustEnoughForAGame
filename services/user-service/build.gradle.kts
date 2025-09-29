@@ -4,7 +4,7 @@ plugins {
     java
 }
 
-group = "com.natsu"
+group = "com.natsu.jefag"
 version = "1.0-SNAPSHOT"
 
 repositories {

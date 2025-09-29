@@ -1,4 +1,4 @@
-package com.natsu.services.lobby;
+package com.natsu.jefag.services.lobby;
 
 import com.natsu.common.springboot.BaseSpringBootApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

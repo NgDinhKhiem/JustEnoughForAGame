@@ -1,4 +1,4 @@
-package com.natsu.services.leaderboard;
+package com.natsu.jefag.services.leaderboard;
 
 import com.natsu.common.springboot.BaseSpringBootApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

@@ -1,4 +1,4 @@
-package com.natsu.services.user;
+package com.natsu.jefag.services.user;
 
 import com.natsu.common.springboot.BaseSpringBootApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
