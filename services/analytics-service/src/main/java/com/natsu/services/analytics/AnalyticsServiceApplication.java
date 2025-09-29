@@ -15,7 +15,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  */
 @SpringBootApplication
 public class AnalyticsServiceApplication extends BaseSpringBootApplication {
-    
     public static void main(String[] args) {
         runService(AnalyticsServiceApplication.class, args);
     }

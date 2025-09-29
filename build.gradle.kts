@@ -8,13 +8,23 @@ group = "com.natsu"
 version = "1.0-SNAPSHOT"
 
 repositories {
-    mavenCentral()
+    mavenCentral {
+        content {
+            // Only resolve from Maven Central for faster resolution
+            includeGroupByRegex(".*")
+        }
+    }
 }
 
 // Global dependency management for all subprojects
 subprojects {
     repositories {
-        mavenCentral()
+        mavenCentral {
+            content {
+                // Only resolve from Maven Central for faster resolution
+                includeGroupByRegex(".*")
+            }
+        }
     }
     
     // Apply dependency management to all subprojects
