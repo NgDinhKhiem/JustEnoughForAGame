@@ -19,6 +19,18 @@ dependencies {
     // Logging
     api("org.slf4j:slf4j-api")
     
+    // Configuration parsing libraries
+    // YAML support
+    api("org.yaml:snakeyaml:2.2")
+    
+    // JSON support (Jackson)
+    api("com.fasterxml.jackson.core:jackson-databind")
+    api("com.fasterxml.jackson.core:jackson-core")
+    api("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    
+    // TOML support
+    api("com.moandjiezana.toml:toml4j:0.7.2")
+    
     // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")

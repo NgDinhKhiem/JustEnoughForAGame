@@ -1,0 +1,381 @@
+package com.natsu.jefag.common.config;
+
+import com.natsu.jefag.common.config.parser.ConfigParser;
+import com.natsu.jefag.common.config.parser.ConfigParserFactory;
+
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Fluent builder for creating ConfigSection instances from various sources.
+ *
+ * <p>Example usage:
+ * <pre>
+ * // From file
+ * ConfigSection config = Configuration.fromFile("config.yml").load();
+ *
+ * // From string
+ * ConfigSection config = Configuration.fromYaml(yamlString).load();
+ *
+ * // From resource
+ * ConfigSection config = Configuration.fromResource("defaults.json").load();
+ *
+ * // With defaults
+ * ConfigSection config = Configuration.fromFile("config.yml")
+ *     .withDefaults(defaults)
+ *     .load();
+ * </pre>
+ */
+public final class Configuration {
+
+    private Configuration() {
+        // Utility class
+    }
+
+    /**
+     * Creates a builder to load configuration from a file.
+     *
+     * @param path the file path
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromFile(Path path) {
+        return new ConfigurationBuilder().file(path);
+    }
+
+    /**
+     * Creates a builder to load configuration from a file.
+     *
+     * @param path the file path string
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromFile(String path) {
+        return new ConfigurationBuilder().file(path);
+    }
+
+    /**
+     * Creates a builder to load configuration from a classpath resource.
+     *
+     * @param resourcePath the resource path
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromResource(String resourcePath) {
+        return new ConfigurationBuilder().resource(resourcePath);
+    }
+
+    /**
+     * Creates a builder to load configuration from a classpath resource.
+     *
+     * @param resourcePath the resource path
+     * @param classLoader the class loader to use
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromResource(String resourcePath, ClassLoader classLoader) {
+        return new ConfigurationBuilder().resource(resourcePath, classLoader);
+    }
+
+    /**
+     * Creates a builder to load YAML configuration from a string.
+     *
+     * @param content the YAML content
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromYaml(String content) {
+        return new ConfigurationBuilder().yaml(content);
+    }
+
+    /**
+     * Creates a builder to load JSON configuration from a string.
+     *
+     * @param content the JSON content
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromJson(String content) {
+        return new ConfigurationBuilder().json(content);
+    }
+
+    /**
+     * Creates a builder to load TOML configuration from a string.
+     *
+     * @param content the TOML content
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromToml(String content) {
+        return new ConfigurationBuilder().toml(content);
+    }
+
+    /**
+     * Creates a builder to load configuration from an input stream.
+     *
+     * @param inputStream the input stream
+     * @param format the configuration format
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromStream(InputStream inputStream, ConfigFormat format) {
+        return new ConfigurationBuilder().stream(inputStream, format);
+    }
+
+    /**
+     * Creates a builder to load configuration from a reader.
+     *
+     * @param reader the reader
+     * @param format the configuration format
+     * @return a new ConfigurationBuilder
+     */
+    public static ConfigurationBuilder fromReader(Reader reader, ConfigFormat format) {
+        return new ConfigurationBuilder().reader(reader, format);
+    }
+
+    /**
+     * Creates an empty ConfigSection.
+     *
+     * @return an empty ConfigSection
+     */
+    public static ConfigSection empty() {
+        return ConfigSection.empty();
+    }
+
+    /**
+     * Creates a ConfigSection from a map.
+     *
+     * @param data the configuration data
+     * @return a new ConfigSection
+     */
+    public static ConfigSection of(Map<String, Object> data) {
+        return ConfigSection.of(data);
+    }
+
+    /**
+     * Builder for loading configurations from various sources.
+     */
+    public static class ConfigurationBuilder {
+        private Source source;
+        private ConfigSection defaults;
+        private boolean mergeDefaults = true;
+
+        private enum SourceType {
+            FILE, RESOURCE, STRING, STREAM, READER
+        }
+
+        private static class Source {
+            SourceType type;
+            Object value;
+            ConfigFormat format;
+            ClassLoader classLoader;
+        }
+
+        ConfigurationBuilder() {
+        }
+
+        /**
+         * Loads configuration from a file.
+         */
+        public ConfigurationBuilder file(Path path) {
+            this.source = new Source();
+            this.source.type = SourceType.FILE;
+            this.source.value = path;
+            this.source.format = ConfigFormat.fromFilePath(path.toString()).orElse(null);
+            return this;
+        }
+
+        /**
+         * Loads configuration from a file.
+         */
+        public ConfigurationBuilder file(String path) {
+            this.source = new Source();
+            this.source.type = SourceType.FILE;
+            this.source.value = Path.of(path);
+            this.source.format = ConfigFormat.fromFilePath(path).orElse(null);
+            return this;
+        }
+
+        /**
+         * Loads configuration from a classpath resource.
+         */
+        public ConfigurationBuilder resource(String resourcePath) {
+            return resource(resourcePath, Thread.currentThread().getContextClassLoader());
+        }
+
+        /**
+         * Loads configuration from a classpath resource.
+         */
+        public ConfigurationBuilder resource(String resourcePath, ClassLoader classLoader) {
+            this.source = new Source();
+            this.source.type = SourceType.RESOURCE;
+            this.source.value = resourcePath;
+            this.source.format = ConfigFormat.fromFilePath(resourcePath).orElse(null);
+            this.source.classLoader = classLoader;
+            return this;
+        }
+
+        /**
+         * Loads YAML configuration from a string.
+         */
+        public ConfigurationBuilder yaml(String content) {
+            this.source = new Source();
+            this.source.type = SourceType.STRING;
+            this.source.value = content;
+            this.source.format = ConfigFormat.YAML;
+            return this;
+        }
+
+        /**
+         * Loads JSON configuration from a string.
+         */
+        public ConfigurationBuilder json(String content) {
+            this.source = new Source();
+            this.source.type = SourceType.STRING;
+            this.source.value = content;
+            this.source.format = ConfigFormat.JSON;
+            return this;
+        }
+
+        /**
+         * Loads TOML configuration from a string.
+         */
+        public ConfigurationBuilder toml(String content) {
+            this.source = new Source();
+            this.source.type = SourceType.STRING;
+            this.source.value = content;
+            this.source.format = ConfigFormat.TOML;
+            return this;
+        }
+
+        /**
+         * Loads configuration from an input stream.
+         */
+        public ConfigurationBuilder stream(InputStream inputStream, ConfigFormat format) {
+            this.source = new Source();
+            this.source.type = SourceType.STREAM;
+            this.source.value = inputStream;
+            this.source.format = format;
+            return this;
+        }
+
+        /**
+         * Loads configuration from a reader.
+         */
+        public ConfigurationBuilder reader(Reader reader, ConfigFormat format) {
+            this.source = new Source();
+            this.source.type = SourceType.READER;
+            this.source.value = reader;
+            this.source.format = format;
+            return this;
+        }
+
+        /**
+         * Sets default values to use when keys are missing.
+         *
+         * @param defaults the default configuration
+         * @return this builder
+         */
+        public ConfigurationBuilder withDefaults(ConfigSection defaults) {
+            this.defaults = defaults;
+            return this;
+        }
+
+        /**
+         * Sets default values from a map.
+         *
+         * @param defaults the default values
+         * @return this builder
+         */
+        public ConfigurationBuilder withDefaults(Map<String, Object> defaults) {
+            this.defaults = ConfigSection.of(defaults);
+            return this;
+        }
+
+        /**
+         * Controls whether defaults are merged with loaded configuration.
+         *
+         * @param merge true to merge (default), false to only use defaults for missing top-level keys
+         * @return this builder
+         */
+        public ConfigurationBuilder mergeDefaults(boolean merge) {
+            this.mergeDefaults = merge;
+            return this;
+        }
+
+        /**
+         * Loads and returns the configuration.
+         *
+         * @return the loaded ConfigSection
+         * @throws ConfigurationException if loading fails
+         */
+        public ConfigSection load() {
+            if (source == null) {
+                return defaults != null ? defaults : ConfigSection.empty();
+            }
+
+            if (source.format == null) {
+                throw new ConfigurationException("Could not determine configuration format");
+            }
+
+            ConfigParser parser = ConfigParserFactory.getParser(source.format);
+            Map<String, Object> data;
+
+            switch (source.type) {
+                case FILE:
+                    data = parser.parse((Path) source.value);
+                    break;
+                case RESOURCE:
+                    String resourcePath = (String) source.value;
+                    ClassLoader cl = source.classLoader != null ? source.classLoader :
+                            Thread.currentThread().getContextClassLoader();
+                    try (InputStream is = cl.getResourceAsStream(resourcePath)) {
+                        if (is == null) {
+                            throw new ConfigurationException("Resource not found: " + resourcePath);
+                        }
+                        data = parser.parse(is);
+                    } catch (Exception e) {
+                        if (e instanceof ConfigurationException) throw (ConfigurationException) e;
+                        throw ConfigurationException.loadError(resourcePath, e);
+                    }
+                    break;
+                case STRING:
+                    data = parser.parseString((String) source.value);
+                    break;
+                case STREAM:
+                    data = parser.parse((InputStream) source.value);
+                    break;
+                case READER:
+                    data = parser.parse((Reader) source.value);
+                    break;
+                default:
+                    throw new ConfigurationException("Unknown source type");
+            }
+
+            // Apply defaults if present
+            if (defaults != null && mergeDefaults) {
+                data = mergeDeep(defaults.toMap(), data);
+            }
+
+            return new ConfigSection(data);
+        }
+
+        @SuppressWarnings("unchecked")
+        private Map<String, Object> mergeDeep(Map<String, Object> defaults, Map<String, Object> overrides) {
+            Map<String, Object> result = new LinkedHashMap<>(defaults);
+
+            for (Map.Entry<String, Object> entry : overrides.entrySet()) {
+                String key = entry.getKey();
+                Object overrideValue = entry.getValue();
+                Object defaultValue = result.get(key);
+
+                if (defaultValue instanceof Map && overrideValue instanceof Map) {
+                    result.put(key, mergeDeep(
+                            (Map<String, Object>) defaultValue,
+                            (Map<String, Object>) overrideValue
+                    ));
+                } else {
+                    result.put(key, overrideValue);
+                }
+            }
+
+            return result;
+        }
+    }
+}
