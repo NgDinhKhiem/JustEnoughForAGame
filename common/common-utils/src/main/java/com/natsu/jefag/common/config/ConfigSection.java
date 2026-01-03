@@ -123,6 +123,20 @@ public class ConfigSection {
     }
 
     /**
+     * Gets a raw value directly from this section's data map without path navigation.
+     * Useful when keys contain dots that should not be interpreted as path separators.
+     *
+     * @param key the key (treated as a literal key, no dot navigation)
+     * @return the value, or null if not found
+     */
+    public Object getDirect(String key) {
+        if (key == null || key.isEmpty()) {
+            return null;
+        }
+        return data.get(key);
+    }
+
+    /**
      * Gets a value with a default fallback.
      *
      * @param key the key

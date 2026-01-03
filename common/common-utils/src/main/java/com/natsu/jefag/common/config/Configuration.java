@@ -7,16 +7,23 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Fluent builder for creating ConfigSection instances from various sources.
+ * Includes a static cache for file-based configurations to avoid repeated disk reads.
  *
  * <p>Example usage:
  * <pre>
- * // From file
+ * // From file (cached)
  * ConfigSection config = Configuration.fromFile("config.yml").load();
+ *
+ * // From file (bypass cache)
+ * ConfigSection config = Configuration.fromFile("config.yml").noCache().load();
  *
  * // From string
  * ConfigSection config = Configuration.fromYaml(yamlString).load();
@@ -32,8 +39,109 @@ import java.util.Map;
  */
 public final class Configuration {
 
+    // Static cache for file-based configurations
+    private static final Map<String, CachedConfig> configCache = new ConcurrentHashMap<>();
+
+    private static class CachedConfig {
+        final ConfigSection config;
+        final long loadedAt;
+        final long fileLastModified;
+
+        CachedConfig(ConfigSection config, long fileLastModified) {
+            this.config = config;
+            this.loadedAt = System.currentTimeMillis();
+            this.fileLastModified = fileLastModified;
+        }
+    }
+
     private Configuration() {
         // Utility class
+    }
+
+    /**
+     * Gets a cached configuration by file path, or null if not cached.
+     *
+     * @param path the file path
+     * @return the cached ConfigSection, or null
+     */
+    public static ConfigSection getCached(String path) {
+        CachedConfig cached = configCache.get(normalizePath(path));
+        return cached != null ? cached.config : null;
+    }
+
+    /**
+     * Gets a cached configuration by file path, or null if not cached.
+     *
+     * @param path the file path
+     * @return the cached ConfigSection, or null
+     */
+    public static ConfigSection getCached(Path path) {
+        return getCached(path.toString());
+    }
+
+    /**
+     * Checks if a configuration is cached.
+     *
+     * @param path the file path
+     * @return true if cached
+     */
+    public static boolean isCached(String path) {
+        return configCache.containsKey(normalizePath(path));
+    }
+
+    /**
+     * Invalidates a cached configuration.
+     *
+     * @param path the file path to invalidate
+     */
+    public static void invalidate(String path) {
+        configCache.remove(normalizePath(path));
+    }
+
+    /**
+     * Invalidates a cached configuration.
+     *
+     * @param path the file path to invalidate
+     */
+    public static void invalidate(Path path) {
+        invalidate(path.toString());
+    }
+
+    /**
+     * Clears all cached configurations.
+     */
+    public static void invalidateAll() {
+        configCache.clear();
+    }
+
+    /**
+     * Gets all cached configuration paths.
+     *
+     * @return set of cached paths
+     */
+    public static Set<String> getCachedPaths() {
+        return Set.copyOf(configCache.keySet());
+    }
+
+    /**
+     * Gets the number of cached configurations.
+     *
+     * @return cache size
+     */
+    public static int cacheSize() {
+        return configCache.size();
+    }
+
+    private static String normalizePath(String path) {
+        return Paths.get(path).toAbsolutePath().normalize().toString();
+    }
+
+    static void cacheConfig(String path, ConfigSection config, long fileLastModified) {
+        configCache.put(normalizePath(path), new CachedConfig(config, fileLastModified));
+    }
+
+    static CachedConfig getCachedInternal(String path) {
+        return configCache.get(normalizePath(path));
     }
 
     /**
@@ -155,6 +263,7 @@ public final class Configuration {
         private Source source;
         private ConfigSection defaults;
         private boolean mergeDefaults = true;
+        private boolean useCache = true;
 
         private enum SourceType {
             FILE, RESOURCE, STRING, STREAM, READER
@@ -168,6 +277,28 @@ public final class Configuration {
         }
 
         ConfigurationBuilder() {
+        }
+
+        /**
+         * Disables caching for this load operation.
+         * The configuration will be loaded fresh from disk.
+         *
+         * @return this builder
+         */
+        public ConfigurationBuilder noCache() {
+            this.useCache = false;
+            return this;
+        }
+
+        /**
+         * Enables or disables caching for this load operation.
+         *
+         * @param useCache true to use cache (default), false to load fresh
+         * @return this builder
+         */
+        public ConfigurationBuilder cache(boolean useCache) {
+            this.useCache = useCache;
+            return this;
         }
 
         /**
@@ -301,6 +432,7 @@ public final class Configuration {
 
         /**
          * Loads and returns the configuration.
+         * For file-based configurations, uses cache by default unless noCache() was called.
          *
          * @return the loaded ConfigSection
          * @throws ConfigurationException if loading fails
@@ -314,12 +446,49 @@ public final class Configuration {
                 throw new ConfigurationException("Could not determine configuration format");
             }
 
+            // Check cache for file-based configurations
+            if (useCache && source.type == SourceType.FILE) {
+                Path filePath = (Path) source.value;
+                String pathStr = filePath.toString();
+                
+                try {
+                    java.nio.file.attribute.BasicFileAttributes attrs = 
+                        java.nio.file.Files.readAttributes(filePath, java.nio.file.attribute.BasicFileAttributes.class);
+                    long fileModified = attrs.lastModifiedTime().toMillis();
+                    
+                    Configuration.CachedConfig cached = Configuration.getCachedInternal(pathStr);
+                    if (cached != null && cached.fileLastModified == fileModified) {
+                        // Return cached config if file hasn't changed
+                        if (defaults != null && mergeDefaults) {
+                            Map<String, Object> mergedData = mergeDeep(defaults.toMap(), cached.config.toMap());
+                            return new ConfigSection(mergedData);
+                        }
+                        return cached.config;
+                    }
+                } catch (java.io.IOException e) {
+                    // File might not exist yet, continue with loading
+                }
+            }
+
             ConfigParser parser = ConfigParserFactory.getParser(source.format);
             Map<String, Object> data;
 
             switch (source.type) {
                 case FILE:
-                    data = parser.parse((Path) source.value);
+                    Path filePath = (Path) source.value;
+                    data = parser.parse(filePath);
+                    
+                    // Cache the loaded config
+                    if (useCache) {
+                        try {
+                            java.nio.file.attribute.BasicFileAttributes attrs = 
+                                java.nio.file.Files.readAttributes(filePath, java.nio.file.attribute.BasicFileAttributes.class);
+                            Configuration.cacheConfig(filePath.toString(), new ConfigSection(new LinkedHashMap<>(data)), 
+                                attrs.lastModifiedTime().toMillis());
+                        } catch (java.io.IOException ignored) {
+                            // Caching failed, but we can still return the config
+                        }
+                    }
                     break;
                 case RESOURCE:
                     String resourcePath = (String) source.value;
