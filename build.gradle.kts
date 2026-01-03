@@ -30,6 +30,16 @@ subprojects {
     // Apply dependency management to all subprojects
     apply(plugin = "io.spring.dependency-management")
     
+    // Configure Java compilation for parallel builds
+    tasks.withType<JavaCompile>().configureEach {
+        options.isIncremental = true
+        // Enable parallel compilation within a single project
+        options.compilerArgs.addAll(listOf(
+            "-Xmaxerrs", "1000",
+            "-Xmaxwarns", "1000"
+        ))
+    }
+    
     dependencyManagement {
         imports {
             mavenBom("org.springframework.boot:spring-boot-dependencies:3.2.0")
@@ -71,4 +81,6 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // Enable parallel test execution for faster test runs
+    maxParallelForks = Runtime.getRuntime().availableProcessors().div(2).coerceAtLeast(1)
 }
