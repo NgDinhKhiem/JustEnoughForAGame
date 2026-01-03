@@ -4,6 +4,35 @@ spring:
   profiles:
     include: common
   
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:auth_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 300000
+      connection-timeout: 20000
+  
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+  
+  # Redis Configuration (for session storage)
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  
   # Auth-specific Redis session configuration
   session:
     store-type: redis
@@ -14,7 +43,17 @@ spring:
 server:
   port: 8071
 
-# JWT Configuration
+# Auth Configuration
+auth:
+  jwt:
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:3600}       # 1 hour in seconds
+    refresh-token-ttl: ${JWT_REFRESH_TOKEN_TTL:604800}   # 7 days in seconds
+    key-id: ${JWT_KEY_ID:auth-key-001}
+  lockout:
+    max-attempts: ${AUTH_LOCKOUT_MAX_ATTEMPTS:5}
+    duration-minutes: ${AUTH_LOCKOUT_DURATION_MINUTES:30}
+
+# JWT Configuration (legacy - kept for backward compatibility)
 jwt:
   secret: ${JWT_SECRET:your-secret-key-here-change-in-production}
   expiration: ${JWT_EXPIRATION:86400}  # 24 hours in seconds
@@ -28,4 +67,20 @@ oauth2:
   github:
     client-id: ${OAUTH2_GITHUB_CLIENT_ID:}
     client-secret: ${OAUTH2_GITHUB_CLIENT_SECRET:}
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+
+# Logging Configuration
+logging:
+  level:
+    com.natsu.jefag.services.auth: DEBUG
+    org.springframework.security: INFO
 
